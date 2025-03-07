@@ -25,7 +25,9 @@ mongoose.connect(process.env.MONGO_URI, {
 const User = require('./models/User');
 
 // Secret key for JWT (store this securely in .env)
-const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key';
+const JWT_SECRET = process.env.JWT_SECRET;
+
+
 
 // Signup route (already implemented)
 app.post('/signup', async (req, res) => {
@@ -177,6 +179,46 @@ app.post('/send-call', async (req, res) => {
     res.status(500).json({ message: 'Failed to send notification' });
   }
 });
+
+
+// Middleware to authenticate JWT token
+function authenticateToken(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  if (!token) return res.status(401).json({ message: 'Access denied. No token provided.' });
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) return res.status(403).json({ message: 'Invalid or expired token.' });
+    req.user = user; // Attach the decoded user object to the request
+    next();
+  });
+}
+
+// Get all users except the logged-in user
+app.get('/users', authenticateToken, async (req, res) => {
+  try {
+    // Extract the logged-in user's ID from the JWT payload
+    const loggedInUserId = req.user.userId;
+
+    // Fetch all users except the logged-in user
+    const users = await User.find(
+      { _id: { $ne: loggedInUserId } }, // Exclude the logged-in user
+      { password: 0, fcmToken: 0 } // Exclude sensitive fields like password and FCM token
+    );
+
+    // Respond with the list of users
+    res.status(200).json({
+      message: 'Users retrieved successfully',
+      users,
+    });
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+
+
 // Start the server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
