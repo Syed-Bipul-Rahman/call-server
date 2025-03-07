@@ -203,7 +203,9 @@ app.get('/users', authenticateToken, async (req, res) => {
     // Fetch all users except the logged-in user
     const users = await User.find(
       { _id: { $ne: loggedInUserId } }, // Exclude the logged-in user
-      { password: 0, fcmToken: 0 } // Exclude sensitive fields like password and FCM token
+      // { password: 0, fcmToken: 0 }
+      {password:0}
+      // Exclude sensitive fields like password and FCM token
     );
 
     // Respond with the list of users
