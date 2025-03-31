@@ -5,7 +5,7 @@ const bcrypt = require('bcryptjs');
 const bodyParser = require('body-parser');
 const jwt = require('jsonwebtoken'); 
 const admin = require('firebase-admin');
-const serviceAccount = require('./agora-call-service-firebase-adminsdk-fbsvc-32c6760351.json');
+const serviceAccount = require('./agoravideocall-6b8e9-firebase-adminsdk-fbsvc-1e228ce372.json');
 
 
 const app = express();
@@ -31,6 +31,7 @@ const JWT_SECRET = process.env.JWT_SECRET;
 
 // Signup route (already implemented)
 app.post('/signup', async (req, res) => {
+  console.log(req.body)
   try {
     const { username, email, password, fcmToken } = req.body;
 
@@ -68,9 +69,53 @@ app.post('/signup', async (req, res) => {
 });
 
 // Login route
+// app.post('/login', async (req, res) => {
+//   try {
+//     const { email, password } = req.body;
+
+//     // Validate input
+//     if (!email || !password) {
+//       return res.status(400).json({ message: 'Email and password are required' });
+//     }
+
+//     // Find user by email
+//     const user = await User.findOne({ email });
+//     if (!user) {
+//       return res.status(401).json({ message: 'Invalid email or password' });
+//     }
+
+//     // Compare passwords
+//     const isPasswordValid = await bcrypt.compare(password, user.password);
+//     if (!isPasswordValid) {
+//       return res.status(401).json({ message: 'Invalid email or password' });
+//     }
+
+//     // Generate JWT token (optional)
+//     const token = jwt.sign(
+//       { userId: user._id, email: user.email },
+//       JWT_SECRET,
+//       { expiresIn: '1h' } // Token expires in 1 hour
+//     );
+
+//     // Respond with success message and token
+//     res.status(200).json({
+//       message: 'Login successful',
+//       token, // Include the token in the response
+//       user: {
+//         username: user.username,
+//         email: user.email,
+//       },
+//     });
+//   } catch (error) {
+//     console.error('Error during login:', error);
+//     res.status(500).json({ message: 'Internal server error' });
+//   }
+// });
+
+
 app.post('/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, fcmToken } = req.body;
 
     // Validate input
     if (!email || !password) {
@@ -87,6 +132,12 @@ app.post('/login', async (req, res) => {
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       return res.status(401).json({ message: 'Invalid email or password' });
+    }
+
+    // Update FCM token if provided
+    if (fcmToken) {
+      user.fcmToken = fcmToken;
+      await user.save();
     }
 
     // Generate JWT token (optional)
@@ -121,6 +172,7 @@ admin.initializeApp({
 
 // Send push notification route
 app.post('/send-call', async (req, res) => {
+  console.log(req.body)
   try {
     const { 
       fcmToken, 
