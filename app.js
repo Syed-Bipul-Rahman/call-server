@@ -258,7 +258,7 @@ app.get('/users', authenticateToken, async (req, res) => {
       // { password: 0, fcmToken: 0 }
       {password:0}
       // Exclude sensitive fields like password and FCM token
-    );
+    ).sort({ _id: -1 });
 
     // Respond with the list of users
     res.status(200).json({
